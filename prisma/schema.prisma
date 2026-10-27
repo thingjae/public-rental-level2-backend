@@ -1,0 +1,113 @@
+// 한빛구 공공 생활물품 대여소 - DB 설계 (기획서 6장)
+// 거점 1:N 물품 1:N 예약, 물품 1:N 고장 신고
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Category {
+  TOOL     // 공구
+  CAMPING  // 캠핑
+  LIVING   // 생활
+  EVENT    // 행사
+}
+
+enum RentalType {
+  HOURLY // 시간형: 3시간 칸 단위, 최대 2칸
+  DAILY  // 날짜형: 하루 단위, 최대 7일
+}
+
+enum ItemStatus {
+  AVAILABLE   // 대여 가능
+  NEEDS_CHECK // 점검 필요
+  REPAIRING   // 수리 중
+}
+
+enum ReservationStatus {
+  RESERVED // 예약 (대여 중, 반납 지연은 시각으로 계산)
+  CANCELED // 취소
+  RETURNED // 반납 완료
+}
+
+enum ReportStatus {
+  RECEIVED // 접수
+  RESOLVED // 처리 완료
+}
+
+// 거점
+model Location {
+  id        Int    @id @default(autoincrement())
+  name      String
+  address   String
+  phone     String
+  code      String @unique // QR 반납용 거점 코드
+  openHours String @map("open_hours")
+  items     Item[]
+
+  @@map("locations")
+}
+
+// 물품
+model Item {
+  id          Int          @id @default(autoincrement())
+  locationId  Int          @map("location_id")
+  location    Location     @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  name        String
+  category    Category
+  description String
+  caution     String       @default("")
+  imageUrl    String?      @map("image_url")
+  rentalType  RentalType   @map("rental_type")
+  maxDuration Int          @map("max_duration") // 시간형은 칸 수(1~2), 날짜형은 일 수(1~7)
+  status      ItemStatus   @default(AVAILABLE)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  reservations Reservation[]
+  reports     DamageReport[]
+
+  @@index([locationId])
+  @@map("items")
+}
+
+// 예약
+model Reservation {
+  id          Int               @id @default(autoincrement())
+  itemId      Int               @map("item_id")
+  item        Item              @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  renterName  String            @map("renter_name")
+  renterPhone String            @map("renter_phone")
+  startAt     DateTime          @map("start_at")
+  endAt       DateTime          @map("end_at")
+  status      ReservationStatus @default(RESERVED)
+  createdAt   DateTime          @default(now()) @map("created_at")
+  canceledAt  DateTime?         @map("canceled_at")
+  returnedAt  DateTime?         @map("returned_at")
+  reports     DamageReport[]
+
+  @@index([itemId, startAt])
+  @@index([renterName, renterPhone])
+  @@map("reservations")
+}
+
+// 고장 신고
+model DamageReport {
+  id            Int          @id @default(autoincrement())
+  itemId        Int          @map("item_id")
+  item          Item         @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  reservationId Int?         @map("reservation_id")
+  reservation   Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+  reporterName  String       @map("reporter_name")
+  content       String
+  status        ReportStatus @default(RECEIVED)
+  createdAt     DateTime     @default(now()) @map("created_at")
+  resolvedAt    DateTime?    @map("resolved_at")
+
+  @@index([itemId])
+  @@map("damage_reports")
+}
