@@ -10,9 +10,11 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { PHONE_MESSAGE, PHONE_RE } from '../common/person.js';
+import { normalizePhone, PHONE_MESSAGE, PHONE_RE } from '../common/person.js';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
+// - 없이 입력해도 010-1234-5678 모양으로 맞춘 뒤 확인한다
+const phone = ({ value }: { value: unknown }) => (typeof value === 'string' ? normalizePhone(value) : value);
 
 // 이름 + 연락처 (로그인 대신 본인 확인에 쓴다)
 export class PersonDto {
@@ -22,7 +24,7 @@ export class PersonDto {
   @MaxLength(20, { message: '이름은 20자 이내로 입력해 주세요.' })
   renterName: string;
 
-  @Transform(trim)
+  @Transform(phone)
   @IsString({ message: PHONE_MESSAGE })
   @Matches(PHONE_RE, { message: PHONE_MESSAGE })
   renterPhone: string;

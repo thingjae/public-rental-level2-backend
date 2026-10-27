@@ -50,8 +50,13 @@ if (reset.status !== 200) {
 // 입력값 확인
 await check('입력: 이름 빈칸', { status: 400, code: 'VALIDATION' }, () =>
   call('POST', '/reservations', { ...NEW, renterName: '', itemId: 5, startDate: day(2), length: 1 }));
-await check('입력: 연락처 형식 틀림', { status: 400, code: 'VALIDATION' }, () =>
-  call('POST', '/reservations', { ...NEW, renterPhone: '01012345678', itemId: 5, startDate: day(2), length: 1 }));
+await check('입력: 연락처 자리수 모자람', { status: 400, code: 'VALIDATION' }, () =>
+  call('POST', '/reservations', { ...NEW, renterPhone: '0101234', itemId: 5, startDate: day(2), length: 1 }));
+await check('입력: 연락처 - 없이 입력해도 같은 사람 (박민수)', { status: 200 }, async () => {
+  const r = await call('POST', '/reservations/lookup', { renterName: '박민수', renterPhone: '01033333333' });
+  const n = r.data?.reservations?.length ?? 0;
+  return { status: r.status === 200 && n > 0 ? 200 : 500, data: { message: `예약 ${n}건 찾음` } };
+});
 await check('입력: 날짜 칸에 글자', { status: 400, code: 'VALIDATION' }, () =>
   call('POST', '/reservations', { ...NEW, itemId: 5, startDate: '내일', length: 1 }));
 await check('입력: 없는 날짜 (2월 30일)', { status: 400, code: 'VALIDATION' }, () =>
