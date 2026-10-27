@@ -102,4 +102,4 @@ npm run check-rules                                              # 로컬
 API_URL=https://public-rental-level2-backend.onrender.com npm run check-rules   # 배포 서버
 ```
 
-최근 결과: [배포 서버 34/34 통과](docs/check-rules-deployed.md) · [로컬 34/34 통과](docs/check-rules-local.md)
+최근 결과: [배포 서버 35/35 통과](docs/check-rules-deployed.md) · [로컬 35/35 통과](docs/check-rules-local.md)
